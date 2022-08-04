@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+
+  symfony-db:
+    container_name: ${DATABASE_HOST:-symfony_db}
+    image: postgres:${POSTGRES_VERSION:-13}-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-symfony-api}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_USER: ${POSTGRES_USER:-symfony}
+    ports:
+      - ${POSTGRES_PORT:-5432}:5432
+    volumes:
+      - symfony-api-data:/var/lib/postgresql/data:rw
+    networks:
+      - symfony-bridge-external
+
+  symfony-mq:
+    container_name: ${RABBITMQ_HOST:-symfony_mq}
+    image: rabbitmq:3.9-management
+    ports:
+      - "${RABBITMQ_PORT:-5672}"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - symfony-bridge-external
+
+volumes:
+  symfony-api-data:
+
+networks:
+  symfony-bridge-external:
+    external: true
+    name: symfony-bridge
